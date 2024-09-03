@@ -1,0 +1,102 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  line-height: 1.6;
+}
+input,
+button {
+  font-size: 16px;
+  padding: 5px 10px;
+  margin: 10px 0;
+}
+button {
+  cursor: pointer;
+}
+
+details {
+  margin-top: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+}
+summary {
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+#result {
+  margin-top: 20px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  visibility: visible;
+}
+
+#result:empty {
+  visibility: hidden;
+}
+
+.error {
+  color: red;
+}
+.success {
+  color: green;
+}
+.progress {
+  display: none;
+  margin-top: 10px;
+}
+
+.details-content {
+  margin-left: 20px;
+}
+.details-content h4 {
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+.details-content ul {
+  margin-top: 5px;
+}
+
+.ens-record {
+  color: grey;
+  font-style: italic;
+  font-size: 10pt;
+}
+
+.faq-section {
+  margin-top: 30px;
+  border: 0;
+  padding: 10px;
+}
+.faq-section summary {
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+}
+.faq-content {
+  margin-top: 15px;
+}
+.faq-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+.faq-content th, .faq-content td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+.faq-content th {
+  background-color: #f2f2f2;
+}
+.faq-content h4 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+.faq-content ul {
+  margin-left: 20px;
+}

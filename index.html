@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DNSSEC Debugger</title>
+    <link rel="stylesheet" type="text/css" href="./main.css" />
+  </head>
+  <body>
+    <h1>DNSSEC Debugger</h1>
+    <input
+      type="text"
+      id="domain-input"
+      placeholder="Enter domain name (e.g., example.com)"
+    />
+    <button id="debug-button">Debug DNSSEC</button>
+    <div id="progress" class="progress">Debugging in progress...</div>
+    <div id="result"></div>
+    <details class="faq-section" open>
+      <summary>Frequently Asked Questions</summary>
+      <div class="faq-content">
+        <h4>What do the DNSSEC debug results mean?</h4>
+        <table>
+          <tr>
+            <th>Indicator</th>
+            <th><span class="success">Yes</span> means</th>
+            <th><span class="error">No</span> means</th>
+          </tr>
+          <tr>
+            <td>DNSSEC Enabled</td>
+            <td>The domain has DNSSEC configured and enabled.</td>
+            <td>
+              The domain is not using DNSSEC, potentially vulnerable to DNS
+              spoofing attacks.
+            </td>
+          </tr>
+          <tr>
+            <td>DNSSEC Validated</td>
+            <td>The DNSSEC chain of trust was successfully validated.</td>
+            <td>
+              Issues in the DNSSEC chain, possibly due to misconfiguration or
+              expired signatures.
+            </td>
+          </tr>
+          <tr>
+            <td>Valid DNSKEY</td>
+            <td>
+              The domain has valid DNSKEY records used to sign other DNS
+              records.
+            </td>
+            <td>
+              DNSKEY records are missing, expired, or invalid, breaking the
+              DNSSEC chain.
+            </td>
+          </tr>
+          <tr>
+            <td>Valid DS</td>
+            <td>
+              Valid Delegation Signer (DS) records exist in the parent zone.
+            </td>
+            <td>
+              DS records are missing or invalid, breaking the chain of trust
+              from the parent zone.
+            </td>
+          </tr>
+          <tr>
+            <td>Matching DS and DNSKEY</td>
+            <td>The DS record correctly matches one of the DNSKEY records.</td>
+            <td>
+              Mismatch between DS and DNSKEY records, breaking the DNSSEC chain.
+            </td>
+          </tr>
+          <tr>
+            <td>All RRSIGs Valid</td>
+            <td>All Resource Record Signatures are valid and not expired.</td>
+            <td>
+              One or more RRSIG records are invalid or expired, causing
+              potential validation failures.
+            </td>
+          </tr>
+          <tr>
+            <td>ENS record set</td>
+            <td>
+              The domain has an ENS1 TXT record for ENS Gasless DNSSEC
+              integration.
+            </td>
+            <td>
+              No ENS1 record present. Not an error, but the domain isn't set up
+              for ENS resolution.
+            </td>
+          </tr>
+        </table>
+
+        <h4>Are my TLDs DNSSEC-Supported?</h4>
+        <p>
+          For an up-to-date list of DNSSEC-supported Top-Level Domains (TLDs),
+          you can refer to the following resources:
+        </p>
+        <ul>
+          <li>
+            <a
+              href="https://stats.research.icann.org/dns/tld_report/"
+              target="_blank"
+              >ICANN TLD DNSSEC Report</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://www.internetsociety.org/deploy360/dnssec/maps/"
+              target="_blank"
+              >Internet Society DNSSEC Maps</a
+            >
+          </li>
+        </ul>
+        <p>
+          Note that DNSSEC support can change over time, so it's always best to
+          check the most recent information or consult with your domain
+          registrar.
+        </p>
+      </div>
+    </details>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
