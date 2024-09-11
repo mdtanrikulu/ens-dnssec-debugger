@@ -1,4 +1,12 @@
-const enc = new TextEncoder();
+import { createMemoryClient } from 'https://cdn.jsdelivr.net/npm/tevm@1.0.0-next.110/memory-client/+esm';
+import { createContract } from 'https://cdn.jsdelivr.net/npm/tevm@1.0.0-next.110/contract/+esm';
+import { encodeDeployData, formatAbi } from 'https://cdn.jsdelivr.net/npm/tevm@1.0.0-next.110/utils/+esm';
+import * as ethers from 'https://cdn.jsdelivr.net/npm/ethers@latest/+esm'
+
+import { DNSProver } from  './utils/DNSProver.js';
+import jsonDNSSECImpl from './DNSSECImpl.js';
+import { algorithms } from './algorithms/index.js';
+import { digests } from './digests/index.js';
 
 class DNSSECDebugger {
   constructor() {
@@ -55,6 +63,9 @@ class DNSSECDebugger {
       const txt = await this.fetchTXT(domain);
       result.txtRecords = this.parseTXTRecords(txt);
       result.ensRecord = this.checkENSRecords(result.txtRecords);
+
+      result.contract = await this.verifyContract(domain);
+      console.log('result.contract', result.contract);
 
       return result;
     } catch (error) {
@@ -196,6 +207,10 @@ class DNSSECDebugger {
   checkENSRecords(txtRecords) {
     const ens1Record = txtRecords.find((record) => record.startsWith('ENS1'));
     return ens1Record ? ens1Record : null;
+  }
+
+  verifyContract(domain) {
+    return verify(domain, 'TXT');
   }
 
   async calculateDSDigest(dnskey, digestType, domain) {
@@ -413,7 +428,6 @@ class DNSSECDebugger {
 }
 
 const domainInput = document.getElementById('domain-input');
-console.log(domainInput);
 const debugButton = document.getElementById('debug-button');
 const resultDiv = document.getElementById('result');
 const progressDiv = document.getElementById('progress');
@@ -450,6 +464,7 @@ const showResult = (result) => {
             ? '<li>RRSIGs: Not explicitly returned, but DNSSEC validation performed</li>'
             : createResultItem('All RRSIGs Valid', result.allRRSIGsValid)
         }
+        ${createResultItem('DNSSEC Contract Verification', result.contract.isValid)}
         ${createENSResultItem(result.ensRecord)}
       </ul>`;
 
@@ -603,3 +618,142 @@ document.addEventListener('DOMContentLoaded', () => {
     onDebugButtonClick();
   }
 });
+
+
+const queryDoH = async (domain, qType) => {
+  const DOH_URL = 'https://cloudflare-dns.com/dns-query';
+  const prover = DNSProver.create(DOH_URL);
+  const result = await prover.queryWithProof(qType, domain);
+
+  console.log("ethers", ethers, ethers.hexlify)
+  const ret = Array.prototype
+    .concat(result.proofs, [result.answer])
+    .map((entry) => ({
+      rrset: entry.toWire(),
+      sig: entry.signature.data.signature,
+    }));
+  const rrsBytes = ret.map(({ rrset, sig }) => [
+    ethers.hexlify(rrset),
+    ethers.hexlify(sig),
+  ]);
+  return rrsBytes;
+};
+
+
+const deployDNSSEC = async () => {
+  const script = createContract({
+    name: 'DNSSECImpl',
+    humanReadableAbi: formatAbi(jsonDNSSECImpl.abi),
+    bytecode: jsonDNSSECImpl.bytecode,
+    deployedBytecode: jsonDNSSECImpl.deployedBytecode,
+  });
+
+  const memoryClient = createMemoryClient(/*{ loggingLevel: "debug" }*/);
+
+  const callData = encodeDeployData({
+    abi: script.abi,
+    bytecode: script.bytecode,
+    args: jsonDNSSECImpl.args,
+  });
+
+  const { createdAddresses } = await memoryClient.tevmCall({
+    createTransaction: true,
+    data: callData,
+  });
+
+  if (!createdAddresses) throw 'no contract deployed';
+  const addrDNSSECImpl = Array.from(createdAddresses)[0];
+
+  await memoryClient.tevmMine();
+
+  const ownerResponse = await memoryClient.tevmContract({
+    to: addrDNSSECImpl,
+    abi: script.abi,
+    functionName: 'owner',
+  });
+  const addrOwner = ownerResponse.data;
+
+  for (let { id, name, callData: data } of digests) {
+    const { createdAddresses } = await memoryClient.tevmCall({
+      createTransaction: true,
+      data,
+    });
+
+    if (!createdAddresses) throw 'no contract deployed';
+    const contractAddr = Array.from(createdAddresses)[0];
+
+    await memoryClient.tevmMine();
+    await memoryClient.tevmContract({
+      to: addrDNSSECImpl,
+      abi: script.abi,
+      functionName: 'setDigest',
+      args: [id, contractAddr],
+      from: addrOwner,
+      createTransaction: true,
+    });
+    await memoryClient.tevmMine();
+    console.log(`Digest ${name} set to address: ${contractAddr}`);
+  }
+
+  for (let { id, name, callData: data } of algorithms) {
+    const { createdAddresses } = await memoryClient.tevmCall({
+      createTransaction: true,
+      data,
+    });
+
+    if (!createdAddresses) throw 'no contract deployed';
+
+    const contractAddr = Array.from(createdAddresses)[0];
+
+    await memoryClient.tevmMine();
+    await memoryClient.tevmContract({
+      to: addrDNSSECImpl,
+      abi: script.abi,
+      functionName: 'setAlgorithm',
+      args: [id, contractAddr],
+      from: addrOwner,
+      createTransaction: true,
+    });
+    await memoryClient.tevmMine();
+    console.log(`Algorithm ${name} set to address: ${contractAddr}`)
+  }
+  return { client: memoryClient, contractAddress: addrDNSSECImpl, script };
+};
+
+async function verify(
+  domain,
+  qType
+) {
+  try {
+    const rrsBytes = await queryDoH(domain, qType);
+    const {
+      client,
+      contractAddress: addrDNSSECImpl,
+      script,
+    } = await deployDNSSEC();
+    console.log(`DNSSECImpl deployed successfully`);
+    console.log(`Verify RRSet for ${domain}`);
+    const response = await client.tevmContract({
+      to: addrDNSSECImpl,
+      abi: script.abi,
+      functionName: 'verifyRRSet',
+      args: [rrsBytes],
+    });
+    console.log(`RRSet verification successful for ${domain}`);
+    console.log(`Result: ${response.rawData}`);
+    return {
+      isValid: true,
+      result: response,
+      reason: null,
+    };
+  } catch (error) {
+    console.log(error);
+    const regex = /(?<=Revert: )\b\w+\b/;
+    const message = error.message.match(regex)?.[0] || error.message;
+    return {
+      isValid: false,
+      result: null,
+      reason: message,
+    };
+  }
+}
