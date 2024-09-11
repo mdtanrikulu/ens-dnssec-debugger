@@ -79,6 +79,14 @@
             </td>
           </tr>
           <tr>
+            <td>DNSSEC Contract Verification</td>
+            <td>All Resource Record Signatures are valid and not expired on contract level</td>
+            <td>
+              One or more RRSIG records are invalid or expired, causing
+              potential validation failures.
+            </td>
+          </tr>
+          <tr>
             <td>ENS record set</td>
             <td>
               The domain has an ENS1 TXT record for ENS Gasless DNSSEC
@@ -116,6 +124,10 @@
           Note that DNSSEC support can change over time, so it's always best to
           check the most recent information or consult with your domain
           registrar.
+        </p>
+        <h4>Having an issue with my domain, who to contact?</h4>
+        <p>
+          If you have an issue with the <code>DNSSEC Contract Verification</code> or <code>ENS record set</code> sections, please contact our ons please contact with our <a href="https://chat.ens.domains/">support.</a>.<br/><br/>For other issues, it is best to contact your DNS manager or registrar. 
         </p>
       </div>
     </details>
