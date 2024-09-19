@@ -140,7 +140,7 @@ class DNSSECDebugger {
       try {
         const response = await this.fetchRecord(domain, type);
         console.log(`Fetched ${type} records:`, response);
-        if (response.AD === true) {
+        if (this.checkDNSSECEnabled(response)) {
           dnssecValidated = true;
         }
         if (response.Answer) {
@@ -160,7 +160,7 @@ class DNSSECDebugger {
   }
 
   checkDNSSECEnabled(response) {
-    return response.AD === true;
+    return response.AD === true && response.Status === 0;
   }
 
   parseDNSKEY(dnskey) {
