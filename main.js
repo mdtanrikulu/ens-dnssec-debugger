@@ -635,11 +635,6 @@ async function validateDNSSEC() {
     let hasSha1Digest = false;
     let hasRsasha1 = false;
 
-    // For tanrikulu.xyz we know it uses SHA-1 digest
-    if (domain.includes('tanrikulu.xyz')) {
-      hasSha1Digest = true;
-    }
-
     if (hasSha1Digest) {
       html += `<div class="warning">Warning: SHA-1 digest detected which is NOT RECOMMENDED for security reasons.</div>`;
     }
